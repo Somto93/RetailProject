@@ -49,13 +49,14 @@ pipeline {
         }
         stage('Package') {
             steps {
-                sh 'zip -r retailproject.zip .'
+                sh 'tar -czf retailproject.tgz .'
             }
         }
         stage('Deploy') {
             steps {
                 sh '''
                     sshpass -p $LABS_PSW scp -o StrictHostKeyChecking=no -r . \
+                    retailproject.tgz \
                     $LABS_USR@g02.itversity.com:/home/itv022118/retailproject
                 '''
             }
