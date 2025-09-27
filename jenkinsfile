@@ -12,20 +12,17 @@ pipeline {
                     . .venv/bin/activate
                     pip install --upgrade pip
                     pip install pipenv
-                    # use the venv; let pipenv reuse it
                     pipenv install
                 '''
             }
         }
-
         stage('Test') {
             steps {
                 sh '''
                     set -e
-                    # Activate project venv
                     . .venv/bin/activate
 
-                    # Bootstrap JDK 17 locally if not present
+                    # ---- Ensure a JDK is present (local, no sudo) ----
                     if [ ! -x ".jdk/bin/java" ]; then
                       echo "Downloading Temurin JDK 17..."
                       curl -fsSL -o jdk.tar.gz \
@@ -34,31 +31,27 @@ pipeline {
                       tar -xzf jdk.tar.gz -C .jdk --strip-components=1
                       rm -f jdk.tar.gz
                     fi
-
-                    # Export Java & PySpark interpreters
                     export JAVA_HOME="$PWD/.jdk"
                     export PATH="$JAVA_HOME/bin:$PATH"
 
+                    # ---- Make PySpark use the venv’s Python ----
                     PY_BIN="$(pipenv --py)"
                     export PYSPARK_PYTHON="$PY_BIN"
                     export PYSPARK_DRIVER_PYTHON="$PY_BIN"
 
-                    # (Optional) sanity checks
+                    # Sanity checks
                     java -version
                     "$PY_BIN" --version
 
-                    # Run tests
                     pipenv run pytest
                 '''
             }
         }
-
         stage('Package') {
             steps {
                 sh 'zip -r retailproject.zip .'
             }
         }
-
         stage('Deploy') {
             steps {
                 sh '''
