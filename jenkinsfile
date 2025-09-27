@@ -51,15 +51,12 @@ pipeline {
             steps {
                 sh '''
           set -e
-          OUT=retailproject.tgz
-          tar -czf "$OUT" \
+          mkdir -p artifacts
+          tar -C . -czf artifacts/retailproject.tgz \
             --warning=no-file-changed \
-            --exclude="./$OUT" \
-            --exclude=".venv" \
-            --exclude=".jdk" \
-            --exclude=".git" \
-            --exclude=".__pycache__" \
-            --exclude=".pytest_cache" \
+            --exclude=".venv" --exclude=".jdk" --exclude=".git" \
+            --exclude=".__pycache__" --exclude=".pytest_cache" \
+            --exclude="artifacts" \
             .
         '''
             }
@@ -67,10 +64,21 @@ pipeline {
         stage('Deploy') {
             steps {
                 sh '''
-                    sshpass -p $LABS_PSW scp -o StrictHostKeyChecking=no -r . \
-                    retailproject.tgz \
-                    $LABS_USR@g02.itversity.com:/home/itv022118/retailproject
-                '''
+          set -e
+          sshpass -p "$LABS_PSW" ssh -o StrictHostKeyChecking=no \
+            "$LABS_USR"@g02.itversity.com "mkdir -p /home/$LABS_USR/retailproject"
+
+          sshpass -p "$LABS_PSW" scp -o StrictHostKeyChecking=no \
+            artifacts/retailproject.tgz \
+            "$LABS_USR"@g02.itversity.com:/home/$LABS_USR/retailproject/
+
+          sshpass -p "$LABS_PSW" ssh -o StrictHostKeyChecking=no \
+            "$LABS_USR"@g02.itversity.com "
+              cd /home/$LABS_USR/retailproject &&
+              tar -xzf retailproject.tgz &&
+              rm -f retailproject.tgz
+            "
+        '''
             }
         }
     }
