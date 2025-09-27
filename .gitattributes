@@ -1,0 +1,27 @@
+# Force LF line endings for code and configs
+*.py   text eol=lf
+*.ipynb text eol=lf
+*.sh   text eol=lf
+*.yml  text eol=lf
+*.yaml text eol=lf
+*.json text eol=lf
+*.lock text eol=lf
+*.toml text eol=lf
+Pipfile* text eol=lf
+
+# Data files (CSV/TSV) - keep LF for cross-platform tools
+*.csv  text eol=lf
+*.tsv  text eol=lf
+
+# Logs should stay as-is
+*.log  -text
+
+# Binary files - don’t touch line endings
+*.png  binary
+*.jpg  binary
+*.jpeg binary
+*.gif  binary
+*.pdf  binary
+*.zip  binary
+*.gz   binary
+*.parquet binary
