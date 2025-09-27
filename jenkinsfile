@@ -7,33 +7,58 @@ pipeline {
         stage('Build') {
             steps {
                 sh '''
-                    # create local venv inside workspace
+                    set -e
                     python3 -m venv .venv
                     . .venv/bin/activate
-                    
-                    # install pipenv inside the venv
                     pip install --upgrade pip
                     pip install pipenv
-                    
-                    # clean old env if exists, then install dependencies
-                    pipenv --rm || true
+                    # use the venv; let pipenv reuse it
                     pipenv install
                 '''
             }
         }
+
         stage('Test') {
             steps {
                 sh '''
+                    set -e
+                    # Activate project venv
                     . .venv/bin/activate
+
+                    # Bootstrap JDK 17 locally if not present
+                    if [ ! -x ".jdk/bin/java" ]; then
+                      echo "Downloading Temurin JDK 17..."
+                      curl -fsSL -o jdk.tar.gz \
+                        https://api.adoptium.net/v3/binary/latest/17/ga/linux/x64/jdk/hotspot/normal/eclipse
+                      mkdir -p .jdk
+                      tar -xzf jdk.tar.gz -C .jdk --strip-components=1
+                      rm -f jdk.tar.gz
+                    fi
+
+                    # Export Java & PySpark interpreters
+                    export JAVA_HOME="$PWD/.jdk"
+                    export PATH="$JAVA_HOME/bin:$PATH"
+
+                    PY_BIN="$(pipenv --py)"
+                    export PYSPARK_PYTHON="$PY_BIN"
+                    export PYSPARK_DRIVER_PYTHON="$PY_BIN"
+
+                    # (Optional) sanity checks
+                    java -version
+                    "$PY_BIN" --version
+
+                    # Run tests
                     pipenv run pytest
                 '''
             }
         }
+
         stage('Package') {
             steps {
                 sh 'zip -r retailproject.zip .'
             }
         }
+
         stage('Deploy') {
             steps {
                 sh '''
