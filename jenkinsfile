@@ -6,14 +6,27 @@ pipeline {
     stages {
         stage('Build') {
             steps {
-                sh 'pip3 install --user pipenv'
-                sh '/bitnami/jenkins/home/.local/bin/pipenv --rm || exit 0'
-                sh '/bitnami/jenkins/home/.local/bin/pipenv install'
+                sh '''
+                    # create local venv inside workspace
+                    python3 -m venv .venv
+                    . .venv/bin/activate
+                    
+                    # install pipenv inside the venv
+                    pip install --upgrade pip
+                    pip install pipenv
+                    
+                    # clean old env if exists, then install dependencies
+                    pipenv --rm || true
+                    pipenv install
+                '''
             }
         }
         stage('Test') {
             steps {
-                sh '/bitnami/jenkins/home/.local/bin/pipenv run pytest'
+                sh '''
+                    . .venv/bin/activate
+                    pipenv run pytest
+                '''
             }
         }
         stage('Package') {
