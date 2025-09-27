@@ -49,7 +49,19 @@ pipeline {
         }
         stage('Package') {
             steps {
-                sh 'tar -czf retailproject.tgz .'
+                sh '''
+          set -e
+          OUT=retailproject.tgz
+          tar -czf "$OUT" \
+            --warning=no-file-changed \
+            --exclude="./$OUT" \
+            --exclude=".venv" \
+            --exclude=".jdk" \
+            --exclude=".git" \
+            --exclude=".__pycache__" \
+            --exclude=".pytest_cache" \
+            .
+        '''
             }
         }
         stage('Deploy') {
